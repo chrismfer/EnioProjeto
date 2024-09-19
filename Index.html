@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Controle de Projetos Arquitetônicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .bg-blueprint {
+            background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23102a43"/><path d="M0 0h100v1H0zM0 20h100v1H0zM0 40h100v1H0zM0 60h100v1H0zM0 80h100v1H0zM20 0v100h1V0zM40 0v100h1V0zM60 0v100h1V0zM80 0v100h1V0z" fill="%23193251"/></svg>');
+        }
+        @keyframes neonPulseOrange {
+            0%, 100% { box-shadow: 0 0 5px #ff6600, 0 0 10px #ff6600, 0 0 20px #ff6600, 0 0 40px #ff6600; }
+            50% { box-shadow: 0 0 2px #ff6600, 0 0 5px #ff6600, 0 0 10px #ff6600, 0 0 20px #ff6600; }
+        }
+        @keyframes neonPulseGreen {
+            0%, 100% { box-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00ff00; }
+            50% { box-shadow: 0 0 2px #00ff00, 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00; }
+        }
+        @keyframes neonPulseBlue {
+            0%, 100% { box-shadow: 0 0 5px #0000ff, 0 0 10px #0000ff, 0 0 20px #0000ff, 0 0 40px #0000ff; }
+            50% { box-shadow: 0 0 2px #0000ff, 0 0 5px #0000ff, 0 0 10px #0000ff, 0 0 20px #0000ff; }
+        }
+        .neon-orange { animation: neonPulseOrange 2s infinite; }
+        .neon-green { animation: neonPulseGreen 2s infinite; }
+        .neon-blue { animation: neonPulseBlue 2s infinite; }
+        .clock-display {
+            background: rgba(13, 25, 45, 0.8);
+            border: 2px solid #1e3a5f;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(30, 58, 95, 0.3);
+            color: #4a9fff;
+        }
+    </style>
+</head>
+<body class="bg-blueprint text-white min-h-screen flex items-center justify-center">
+    <div id="loginContainer" class="w-full max-w-md p-6 bg-gray-800 bg-opacity-90 rounded-lg shadow-xl">
+        <h2 class="text-2xl font-bold mb-6 text-center text-cyan-500">Enio Vivian Arquitetura</h2>
+        <div class="mb-4 text-center">
+            <i class="fas fa-drafting-compass text-5xl text-cyan-500"></i>
+        </div>
+        <input type="text" id="id" placeholder="ID" class="w-full p-2 mb-4 bg-gray-700 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none">
+        <input type="password" id="password" placeholder="Senha" class="w-full p-2 mb-4 bg-gray-700 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none">
+        <button onclick="handleLogin()" class="w-full p-2 bg-cyan-500 text-gray-900 rounded hover:bg-cyan-600 transition duration-300">
+            Entrar <i class="fas fa-chevron-right ml-2"></i>
+        </button>
+        <div id="error" class="text-red-500 mt-4 text-center"></div>
+    </div>
+
+    <div id="dashboard" class="hidden w-full max-w-6xl p-8">
+        <div class="bg-gray-800 bg-opacity-90 rounded-lg shadow-2xl p-8">
+            <!-- Cabeçalho -->
+            <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+                <div class="flex items-center">
+                    <i class="fas fa-hard-hat text-sky-400 mr-3 text-3xl"></i>
+                    <span id="userName" class="text-2xl font-semibold">Bem-vindo, [Nome do Usuário]</span>
+                </div>
+                <button onclick="handleLogout()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded transition duration-300 flex items-center text-lg">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Sair
+                </button>
+            </div>
+
+            <!-- Seletor de Projetos -->
+            <div class="mb-8">
+                <label for="projectSelect" class="block text-sm font-medium text-gray-400 mb-2">Selecione o Projeto</label>
+                <div class="relative">
+                    <select id="projectSelect" class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-sky-600 focus:border-sky-500 text-lg">
+                        <option value="" disabled selected>Selecione um projeto</option>
+                        <!-- Opções serão preenchidas dinamicamente -->
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contêiner principal -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Painel de Controle de Horas -->
+                <div class="bg-gray-700 rounded-lg shadow-xl p-6">
+                    <h2 class="text-3xl font-bold mb-6 text-sky-400 text-center">Controle de Horas</h2>
+                    <div id="employeeTimer" class="clock-display text-5xl font-bold text-center mb-8">
+                        <i class="fas fa-clock mr-3"></i><span>00:00:00</span>
+                    </div>
+                    <div class="flex flex-col space-y-4">
+                        <button id="employeeStartBtn" onclick="startTimer('employee')" class="w-full px-6 py-4 bg-green-500 rounded hover:bg-green-600 transition duration-300 flex items-center justify-center text-xl">
+                            <i class="fas fa-play mr-3"></i>Iniciar
+                        </button>
+                        <button id="employeeIntervalBtn" onclick="toggleEmployeePause()" class="w-full px-6 py-4 bg-sky-500 rounded hover:bg-sky-600 transition duration-300 flex items-center justify-center text-xl" disabled>
+                            <i class="fas fa-coffee mr-3"></i>Intervalo
+                        </button>
+                        <button id="employeeStopBtn" onclick="showFinalModal()" class="w-full px-6 py-4 bg-red-500 rounded hover:bg-red-600 transition duration-300 flex items-center justify-center text-xl" disabled>
+                            <i class="fas fa-stop-circle mr-3"></i>Encerrar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Painel de Projetos -->
+                <div class="bg-gray-700 rounded-lg shadow-xl p-6">
+                    <h2 class="text-3xl font-bold mb-6 text-sky-400 text-center">Controle de Projetos</h2>
+                    <div id="projectTimer" class="clock-display text-5xl font-bold text-center mb-8">
+                        <i class="fas fa-clock mr-3"></i><span>00:00:00</span>
+                    </div>
+                    <div class="flex flex-col space-y-4">
+                        <button id="projectStartBtn" onclick="startTimer('project')" class="w-full px-6 py-4 bg-green-500 rounded hover:bg-green-600 transition duration-300 flex items-center justify-center text-xl">
+                            <i class="fas fa-play mr-3"></i>Iniciar
+                        </button>
+                        <button id="projectPauseBtn" onclick="toggleProjectPause()" class="w-full px-6 py-4 bg-sky-500 rounded hover:bg-sky-600 transition duration-300 flex items-center justify-center text-xl" disabled>
+                            <i class="fas fa-pause mr-3"></i>Pausar
+                        </button>
+                        <button id="projectStopBtn" onclick="showProjectFinalModal()" class="w-full px-6 py-4 bg-red-500 rounded hover:bg-red-600 transition duration-300 flex items-center justify-center text-xl" disabled>
+                            <i class="fas fa-stop-circle mr-3"></i>Encerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Intervalo -->
+    <div id="intervalModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full neon-orange">
+            <h2 class="text-3xl font-bold mb-6 text-center text-orange-500">Intervalo</h2>
+            <div class="text-center mb-6">
+                <i class="fas fa-mug-hot text-6xl text-orange-400"></i>
+            </div>
+            <p id="intervalUserName" class="text-xl mb-4 text-center text-white"></p>
+            <p id="intervalProjectName" class="text-lg mb-8 text-center text-orange-300"></p>
+            <button id="closeIntervalBtn" onclick="closeIntervalModal()" class="w-full px-6 py-4 bg-orange-500 text-white rounded hover:bg-orange-600 transition duration-300 text-xl font-bold">
+                Retornar ao Projeto
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Encerramento de Horas -->
+    <div id="finalModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full neon-green">
+            <h2 class="text-3xl font-bold mb-6 text-center text-green-500">Projeto Finalizado</h2>
+            <div class="text-center mb-6">
+                <i class="fas fa-check-circle text-6xl text-green-400"></i>
+            </div>
+            <p id="finalTime" class="clock-display text-4xl font-bold mb-6 text-center">00:00:00</p>
+            <div class="bg-gray-700 border-l-4 border-green-500 p-4 mb-6">
+                <p class="font-bold">Sucesso!</p>
+                <p>Seu progresso foi registrado com sucesso.</p>
+                <p>Excelente trabalho no projeto!</p>
+            </div>
+            <button id="closeFinalBtn" onclick="closeFinalModal()" class="w-full px-6 py-4 bg-green-500 text-white rounded hover:bg-green-600 transition duration-300 text-xl font-bold">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Encerramento de Projetos -->
+    <div id="projectFinalModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full neon-blue">
+            <h2 class="text-3xl font-bold mb-6 text-center text-blue-500">Projeto Finalizado</h2>
+            <div class="text-center mb-6">
+                <i class="fas fa-check-circle text-6xl text-blue-400"></i>
+            </div>
+            <p id="projectFinalTime" class="clock-display text-4xl font-bold mb-6 text-center">00:00:00</p>
+            <div class="bg-gray-700 border-l-4 border-blue-500 p-4 mb-6">
+                <p class="font-bold">Sucesso!</p>
+                <p>Seu progresso foi registrado com sucesso.</p>
+                <p>Excelente trabalho no projeto!</p>
+            </div>
+            <button id="closeProjectFinalBtn" onclick="closeProjectFinalModal()" class="w-full px-6 py-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300 text-xl font-bold">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let loggedInUserId;
+        let loggedInUserName;
+        let employeeTimer;
+        let projectTimer;
+        let employeeSeconds = 0;
+        let projectSeconds = 0;
+        let employeePaused = false;
+        let projectPaused = false;
+
+        function getGreeting() {
+            const now = new Date();
+            const hours = now.getHours();
+            if (hours >= 0 && hours < 12) {
+                return 'Bom dia';
+            } else if (hours >= 12 && hours < 18) {
+                return 'Boa tarde';
+            } else {
+                return 'Boa noite';
+            }
+        }
+
+        function handleLogin() {
+            const id = document.getElementById('id').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error');
+
+            google.script.run
+                .withSuccessHandler(function(fullName) {
+                    if (fullName) {
+                        loggedInUserId = id;
+                        loggedInUserName = fullName;
+                        document.getElementById('loginContainer').style.display = 'none';
+                        document.getElementById('dashboard').style.display = 'block';
+                        document.getElementById('userName').textContent = `${getGreeting()}, ${loggedInUserName}`;
+                        loadProjects();
+                        loadRealTime();
+                    } else {
+                        errorDiv.textContent = 'ID ou senha incorretos';
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    errorDiv.textContent = 'Erro ao fazer login: ' + error.message;
+                })
+                .login(id, password);
+        }
+
+        function handleLogout() {
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            resetTimer();
+        }
+
+        function loadProjects() {
+            google.script.run
+                .withSuccessHandler(function(projects) {
+                    const projectSelect = document.getElementById('projectSelect');
+                    projectSelect.innerHTML = '<option value="" disabled selected>Selecione um projeto</option>';
+                    projects.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project;
+                        option.textContent = project;
+                        projectSelect.appendChild(option);
+                    });
+                })
+                .getProjects();
+        }
+
+        function loadRealTime() {
+            google.script.run
+                .withSuccessHandler(function(realTime) {
+                    if (realTime > 0) {
+                        employeeSeconds = realTime;
+                        updateTimer('employeeTimer', employeeSeconds);
+                        startTimer('employee');
+                    }
+                })
+                .getLastRealTime(loggedInUserId);
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updateTimer(timerId, seconds) {
+            document.querySelector(`#${timerId} span`).textContent = formatTime(seconds);
+        }
+
+        function startTimer(type) {
+            if (type === 'employee') {
+                clearInterval(employeeTimer);
+                employeeTimer = setInterval(() => {
+                    employeeSeconds++;
+                    updateTimer('employeeTimer', employeeSeconds);
+                    saveRealTime();
+                }, 1000);
+                google.script.run.logTime('start', formatTime(employeeSeconds), loggedInUserId, loggedInUserName);
+                enableEmployeeButtons();
+                disableStartButton('employee');
+            } else if (type === 'project') {
+                const projectSelect = document.getElementById('projectSelect');
+                if (projectSelect.value === '') {
+                    alert('Selecione um projeto antes de iniciar.');
+                    return;
+                }
+                clearInterval(projectTimer);
+                projectTimer = setInterval(() => {
+                    projectSeconds++;
+                    updateTimer('projectTimer', projectSeconds);
+                }, 1000);
+                google.script.run.logProjectTime('start', formatTime(projectSeconds), loggedInUserId, projectSelect.value, loggedInUserName);
+                enableProjectButtons();
+                disableStartButton('project');
+            }
+        }
+
+        function saveRealTime() {
+            google.script.run.saveRealTime(loggedInUserId, employeeSeconds);
+        }
+
+        function toggleEmployeePause() {
+            if (employeePaused) {
+                closeIntervalModal();
+            } else {
+                showIntervalModal();
+            }
+        }
+
+        function toggleProjectPause() {
+            projectPaused = !projectPaused;
+            const pauseBtn = document.getElementById('projectPauseBtn');
+            if (projectPaused) {
+                clearInterval(projectTimer);
+                pauseBtn.innerHTML = '<i class="fas fa-play mr-3"></i>Retornar';
+                google.script.run.logProjectTime('interval', formatTime(projectSeconds), loggedInUserId, document.getElementById('projectSelect').value, loggedInUserName);
+            } else {
+                startTimer('project');
+                pauseBtn.innerHTML = '<i class="fas fa-pause mr-3"></i>Pausar';
+            }
+        }
+
+        function stopTimer(type) {
+            if (type === 'employee') {
+                clearInterval(employeeTimer);
+                const totalTime = formatTime(employeeSeconds);
+                updateTimer('employeeTimer', employeeSeconds);
+                google.script.run.logTime('stop', totalTime, loggedInUserId, loggedInUserName);
+                employeeSeconds = 0;
+            } else if (type === 'project') {
+                clearInterval(projectTimer);
+                const totalTime = formatTime(projectSeconds);
+                updateTimer('projectTimer', projectSeconds);
+                google.script.run.logProjectTime('stop', totalTime, loggedInUserId, document.getElementById('projectSelect').value, loggedInUserName);
+                projectSeconds = 0;
+            }
+        }
+
+        function showIntervalModal() {
+            document.getElementById('intervalModal').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('blur-sm');
+            document.getElementById('intervalUserName').textContent = `Arquiteto: ${loggedInUserName}`;
+            document.getElementById('intervalProjectName').textContent = `Projeto: ${document.getElementById('projectSelect').value}`;
+            google.script.run.logTime('interval', formatTime(employeeSeconds), loggedInUserId, loggedInUserName);
+            document.getElementById('employeeIntervalBtn').innerHTML = '<i class="fas fa-play mr-3"></i>Retornar';
+            clearInterval(employeeTimer);
+            employeePaused = true;
+        }
+
+        function closeIntervalModal() {
+            document.getElementById('intervalModal').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('blur-sm');
+            document.getElementById('employeeIntervalBtn').innerHTML = '<i class="fas fa-coffee mr-3"></i>Intervalo';
+            startTimer('employee');
+            employeePaused = false;
+        }
+
+        function showFinalModal() {
+            document.getElementById('finalModal').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('blur-sm');
+            document.getElementById('finalTime').textContent = formatTime(employeeSeconds);
+            stopTimer('employee');
+            disableEmployeeButtons();
+        }
+
+        function closeFinalModal() {
+            document.getElementById('finalModal').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('blur-sm');
+            employeeSeconds = 0;
+            updateTimer('employeeTimer', employeeSeconds);
+            enableStartButton('employee');
+        }
+
+        function showProjectFinalModal() {
+            document.getElementById('projectFinalModal').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('blur-sm');
+            document.getElementById('projectFinalTime').textContent = formatTime(projectSeconds);
+            stopTimer('project');
+            disableProjectButtons();
+        }
+
+        function closeProjectFinalModal() {
+            document.getElementById('projectFinalModal').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('blur-sm');
+            projectSeconds = 0;
+            updateTimer('projectTimer', projectSeconds);
+            document.getElementById('projectSelect').value = '';
+            enableStartButton('project');
+        }
+
+        function resetTimer() {
+            clearInterval(employeeTimer);
+            clearInterval(projectTimer);
+            employeeSeconds = 0;
+            projectSeconds = 0;
+            employeePaused = false;
+            projectPaused = false;
+            updateTimer('employeeTimer', employeeSeconds);
+            updateTimer('projectTimer', projectSeconds);
+            document.getElementById('projectSelect').value = '';
+            disableAllButtons();
+        }
+
+        function disableEmployeeButtons() {
+            document.getElementById('employeeIntervalBtn').disabled = true;
+            document.getElementById('employeeStopBtn').disabled = true;
+        }
+
+        function enableEmployeeButtons() {
+            document.getElementById('employeeIntervalBtn').disabled = false;
+            document.getElementById('employeeStopBtn').disabled = false;
+        }
+
+        function disableProjectButtons() {
+            document.getElementById('projectPauseBtn').disabled = true;
+            document.getElementById('projectStopBtn').disabled = true;
+        }
+
+        function enableProjectButtons() {
+            document.getElementById('projectPauseBtn').disabled = false;
+            document.getElementById('projectStopBtn').disabled = false;
+        }
+
+        function disableStartButton(type) {
+            if (type === 'employee') {
+                document.getElementById('employeeStartBtn').disabled = true;
+            } else if (type === 'project') {
+                document.getElementById('projectStartBtn').disabled = true;
+            }
+        }
+
+        function enableStartButton(type) {
+            if (type === 'employee') {
+                document.getElementById('employeeStartBtn').disabled = false;
+            } else if (type === 'project') {
+                document.getElementById('projectStartBtn').disabled = false;
+            }
+        }
+
+        function disableAllButtons() {
+            disableEmployeeButtons();
+            disableProjectButtons();
+            enableStartButton('employee');
+            enableStartButton('project');
+        }
+
+        // Desabilita todos os botões ao carregar a página
+        disableAllButtons();
+    </script>
+</body>
+</html>
